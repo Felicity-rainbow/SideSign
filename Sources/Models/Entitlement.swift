@@ -59,6 +59,7 @@ public extension Entitlement {
     static let ubiquityKeyValueStore: Entitlement           = "com.apple.developer.ubiquity-kvstore-identifier"
     static let healthKit: Entitlement                       = "com.apple.developer.healthkit"
     static let healthKitAccess: Entitlement                 = "com.apple.developer.healthkit.access"
+    static let healthKitBackgroundDelivery: Entitlement     = "com.apple.developer.healthkit.background-delivery"
     static let homeKit: Entitlement                         = "com.apple.developer.homekit"
     static let criticalAlerts: Entitlement                  = "com.apple.developer.usernotifications.critical-alerts"
     static let timeSensitiveNotifications: Entitlement      = "com.apple.developer.usernotifications.time-sensitive"
@@ -79,7 +80,9 @@ public extension Entitlement {
         .extendedVirtualAddressing,
         .teamIdentifier,
         .keychainAccessGroups,
-        .applicationIdentifier
+        .applicationIdentifier,
+        .healthKit,
+        .healthKitBackgroundDelivery
     ]
 
     static let paidEntitlements: Set<Entitlement> = [
@@ -114,6 +117,7 @@ public extension Entitlement {
         .ubiquityKeyValueStore,
         .healthKit,
         .healthKitAccess,
+        .healthKitBackgroundDelivery,
         .homeKit,
         .criticalAlerts,
         .timeSensitiveNotifications,
@@ -142,6 +146,7 @@ public extension Entitlement {
         .ubiquityKeyValueStore,
         .healthKit,
         .healthKitAccess,
+        .healthKitBackgroundDelivery,
         .homeKit,
         .criticalAlerts,
         .timeSensitiveNotifications,
@@ -185,6 +190,7 @@ public extension Entitlement {
         case .ubiquityKeyValueStore:            return "iCloud Key-Value Storage"
         case .healthKit:                        return "HealthKit"
         case .healthKitAccess:                  return "Clinical Health Records"
+        case .healthKitBackgroundDelivery:      return "HealthKit Background Delivery"
         case .homeKit:                          return "HomeKit"
         case .criticalAlerts:                   return "Critical Alerts"
         case .timeSensitiveNotifications:       return "Time-Sensitive Notifications"
@@ -232,6 +238,7 @@ public extension Entitlement {
         case .ubiquityKeyValueStore:            return "Sync preferences across user devices"
         case .healthKit:                        return "Read and write personal health data"
         case .healthKitAccess:                  return "Access FHIR medical records"
+        case .healthKitBackgroundDelivery:      return "Receive HealthKit updates while the app is in the background"
         case .homeKit:                          return "Communicate with home automation accessories"
         case .criticalAlerts:                   return "Play sounds and bypass Do Not Disturb"
         case .timeSensitiveNotifications:       return "High-priority immediate notifications"
