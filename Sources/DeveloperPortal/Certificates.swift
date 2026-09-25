@@ -13,22 +13,11 @@ public extension DeveloperPortal {
 
     func fetchCertificates(for team: Team, session: Session) async throws -> [X509Certificate] {
         debugLog("[SideSign] fetchCertificates starting...")
-        verboseLog("[SideSign] Team: \(team.name) (\(team.identifier)), Type: \(team.type)")
+        verboseLog("[SideSign] Team: \(team.name) (\(team.identifier))")
 
-        let endpoint: X509Certificate.CertificateEndpoint = (team.type != .free) ? .developerPortal : .developerServices2
+        let response: ListCertificatesResponse = try await sendRequest(url: Constants.URLs.listCertificates, session: session, team: team)
 
-        var request = URLRequest(url: endpoint.url)
-        request.httpMethod = "GET"
-
-        let certificates: [X509Certificate]
-        switch endpoint {
-        case .developerPortal:
-            let response: CertificatesResponseDeveloperPortal = try await sendServicesRequest(request, session: session, team: team)
-            certificates = response.data?.compactMap { $0.toCertificate() } ?? []
-        case .developerServices2:
-            let response: CertificatesResponseDeveloperServices2 = try await sendServicesRequest(request, session: session, team: team)
-            certificates = response.data?.compactMap { $0.toCertificate() } ?? []
-        }
+        let certificates = (response.certificates ?? []).compactMap { $0.toCertificate() }
 
         debugLog("[SideSign] fetchCertificates completed with \(certificates.count) certificate(s)")
         if !certificates.isEmpty {
@@ -40,13 +29,9 @@ public extension DeveloperPortal {
         return certificates
     }
 
-    func addCertificate(machineName: String, type: CertificateType, to team: Team, session: Session) async throws -> KeyStore {
+    func addCertificate(machineName: String, to team: Team, session: Session) async throws -> KeyStore {
         debugLog("[SideSign] addCertificate starting...")
-        verboseLog("[SideSign] MachineName: '\(machineName)', Type: \(type.displayName), Team: \(team.name)")
-
-        if team.type == .free && type.isPaidOnly {
-            throw DeveloperPortalError.invalidParameters(cause: "Free Apple Developer accounts cannot create \(type.displayName) certificates. Only Apple Development certificates are supported.")
-        }
+        verboseLog("[SideSign] MachineName: '\(machineName)', Team: \(team.name)")
 
         let certRequest: CertificateRequest
         do {
@@ -64,16 +49,8 @@ public extension DeveloperPortal {
             "machineId": UUID().uuidString.uppercased()
         ]
 
-        let submitURL: URL
-        switch type.category {
-        case .distribution:
-            submitURL = Constants.URLs.submitDistributionCSR
-        case .development:
-            submitURL = Constants.URLs.submitDevelopmentCSR
-        }
-
         let response: AddCertificateResponse = try await sendRequest(
-            url: submitURL,
+            url: Constants.URLs.submitCSR,
             additionalParameters: parameters,
             session: session,
             team: team,
@@ -101,7 +78,7 @@ public extension DeveloperPortal {
                 if let serial, $0.serialNumber.caseInsensitiveCompare(serial) == .orderedSame { return true }
                 if let certId, $0.identifier == certId { return true }
                 return false
-            }) else {
+            }) ?? allCerts.first else {
                 debugLog("[SideSign] addCertificate error: Failed to retrieve new certificate from Developer Portal")
                 throw ServerError.badServerResponse(reason: "Failed to retrieve new certificate from Developer Portal", jsonPayload: "")
             }
@@ -118,14 +95,7 @@ public extension DeveloperPortal {
         debugLog("[SideSign] revokeCertificate starting...")
         verboseLog("[SideSign] Name: '\(certificate.name)', ID: '\(certIdentifier)', SN: \(certificate.serialNumber), Team: \(team.name)")
 
-        let endpoint: X509Certificate.CertificateEndpoint
-        if let source = certificate.sourceEndpoint {
-            endpoint = source
-        } else {
-            endpoint = (team.type != .free) ? .developerPortal : .developerServices2
-        }
-
-        let url = endpoint.url.appendingPathComponent(certIdentifier)
+        let url = URL(string: "certificates/\(certIdentifier)", relativeTo: servicesBaseURL)!
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
 

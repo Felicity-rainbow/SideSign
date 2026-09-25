@@ -132,127 +132,6 @@ struct ListCertificatesResponse: Decodable, Sendable {
     let resultString: String?
 }
 
-struct CertificatesResponseDeveloperServices2: Decodable, Sendable {
-    static let endpoint: X509Certificate.CertificateEndpoint = .developerServices2
-    var endpoint: X509Certificate.CertificateEndpoint { Self.endpoint }
-
-    struct Item: Decodable, Sendable {
-        let id: String
-        let type: String
-        let attributes: Attributes?
-
-        struct Attributes: Decodable, Sendable {
-            let certificateType: String?
-            let displayName: String?
-            let name: String?
-            let platform: String?
-            let serialNumber: String?
-            let certificateContent: String?
-            let expirationDate: String?
-            let machineName: String?
-            let machineId: String?
-            let requesterEmail: String?
-            let requesterFirstName: String?
-            let requesterLastName: String?
-            let csrContent: String?
-            let responseId: String?
-        }
-
-        func toCertificate() -> X509Certificate? {
-            guard let contentString = attributes?.certificateContent,
-                  let certData = Data(base64Encoded: contentString, options: .ignoreUnknownCharacters) else {
-                return nil
-            }
-            return X509Certificate(
-                data: certData,
-                identifier: id,
-                machineName: attributes?.machineName,
-                machineIdentifier: attributes?.machineId,
-                requesterEmail: attributes?.requesterEmail,
-                requesterFirstName: attributes?.requesterFirstName,
-                requesterLastName: attributes?.requesterLastName,
-                displayName: attributes?.displayName,
-                certificateType: attributes?.certificateType,
-                platform: attributes?.platform,
-                sourceEndpoint: .developerServices2
-            )
-        }
-    }
-
-    let data: [Item]?
-}
-
-struct CertificatesResponseDeveloperPortal: Decodable, Sendable {
-    static let endpoint: X509Certificate.CertificateEndpoint = .developerPortal
-    var endpoint: X509Certificate.CertificateEndpoint { Self.endpoint }
-
-    struct Item: Decodable, Sendable {
-        let id: String
-        let type: String
-        let attributes: Attributes?
-
-        struct Attributes: Decodable, Sendable {
-            let certificateType: String?
-            let displayName: String?
-            let name: String?
-            let platform: String?
-            let serialNumber: String?
-            let status: String?
-            let certificateContent: String?
-            let expirationDate: String?
-            let machineName: String?
-            let machineId: String?
-            let requesterEmail: String?
-            let requesterFirstName: String?
-            let requesterLastName: String?
-            let isManaged: Bool?
-            let autoRotationEnabled: Bool?
-            let certificateTypeId: String?
-            let certificateTypeName: String?
-            let platformName: String?
-            let ownerId: String?
-            let ownerName: String?
-            let requestedDate: String?
-            let serialNumDecimal: String?
-            let csrContent: String?
-            let responseId: String?
-        }
-
-        func toCertificate() -> X509Certificate? {
-            guard let contentString = attributes?.certificateContent,
-                  let certData = Data(base64Encoded: contentString, options: .ignoreUnknownCharacters) else {
-                return nil
-            }
-            return X509Certificate(
-                data: certData,
-                identifier: id,
-                machineName: attributes?.machineName,
-                machineIdentifier: attributes?.machineId,
-                requesterEmail: attributes?.requesterEmail,
-                requesterFirstName: attributes?.requesterFirstName,
-                requesterLastName: attributes?.requesterLastName,
-                displayName: attributes?.displayName,
-                certificateType: attributes?.certificateType,
-                certificateTypeName: attributes?.certificateTypeName,
-                certificateTypeId: attributes?.certificateTypeId,
-                platform: attributes?.platform,
-                platformName: attributes?.platformName,
-                isManaged: attributes?.isManaged,
-                status: attributes?.status,
-                ownerName: attributes?.ownerName,
-                ownerId: attributes?.ownerId,
-                autoRotationEnabled: attributes?.autoRotationEnabled,
-                requestedDate: attributes?.requestedDate,
-                serialNumDecimal: attributes?.serialNumDecimal,
-                sourceEndpoint: .developerPortal
-            )
-        }
-    }
-
-    let data: [Item]?
-}
-
-
 struct AddCertificateResponse: Decodable, Sendable {
     let resultCode: Int?
     let certRequest: X509CertificateDetails?
@@ -308,7 +187,6 @@ public struct ListedProvisioningProfile: Decodable, Sendable, Identifiable, Equa
     public let name: String
     public let status: String?
     public let type: String?
-    public let platform: String?
     public let uuid: UUID
     public let dateExpire: Date
     public let appId: AppIDPayload?
@@ -318,23 +196,12 @@ public struct ListedProvisioningProfile: Decodable, Sendable, Identifiable, Equa
 
     public var identifier: String? { provisioningProfileId }
     public var bundleIdentifier: String? { appId?.identifier }
-    public var profileType: ProfileType? {
-        if let type, let parsed = ProfileType(argument: type) {
-            return parsed
-        }
-        if let platform, let parsed = ProfileType(argument: platform) {
-            return parsed
-        }
-        guard let type else { return nil }
-        return ProfileType(rawValue: type)
-    }
 
     enum CodingKeys: String, CodingKey {
         case provisioningProfileId
         case name
         case status
         case type
-        case platform = "proProPlatform"
         case uuid = "UUID"
         case dateExpire
         case appId
@@ -347,7 +214,6 @@ public struct ListedProvisioningProfile: Decodable, Sendable, Identifiable, Equa
                 name: String,
                 status: String? = nil,
                 type: String? = nil,
-                platform: String? = nil,
                 uuid: UUID,
                 dateExpire: Date,
                 appId: AppIDPayload? = nil,
@@ -359,7 +225,6 @@ public struct ListedProvisioningProfile: Decodable, Sendable, Identifiable, Equa
         self.name = name
         self.status = status
         self.type = type
-        self.platform = platform
         self.uuid = uuid
         self.dateExpire = dateExpire
         self.appId = appId
@@ -374,7 +239,6 @@ public struct ListedProvisioningProfile: Decodable, Sendable, Identifiable, Equa
         self.name = try container.decode(String.self, forKey: .name)
         self.status = try container.decodeIfPresent(String.self, forKey: .status)
         self.type = try container.decodeIfPresent(String.self, forKey: .type)
-        self.platform = try container.decodeIfPresent(String.self, forKey: .platform)
 
         let uuidString = try container.decode(String.self, forKey: .uuid)
         guard let parsedUUID = UUID(uuidString: uuidString) else {

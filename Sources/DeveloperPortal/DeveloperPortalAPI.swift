@@ -106,7 +106,7 @@ public protocol DeveloperPortalAPI: Sendable {
     func fetchTeams(for account: Account, session: Session) async throws -> [Team]
     
     func fetchCertificates(for team: Team, session: Session) async throws -> [X509Certificate]
-    func addCertificate(machineName: String, type: CertificateType, to team: Team, session: Session) async throws -> KeyStore
+    func addCertificate(machineName: String, to team: Team, session: Session) async throws -> KeyStore
     func revokeCertificate(_ certificate: X509Certificate, for team: Team, session: Session) async throws -> Bool
     
     func fetchDevices(for team: Team, types: DeviceType, session: Session) async throws -> [Device]
@@ -126,12 +126,13 @@ public protocol DeveloperPortalAPI: Sendable {
     func assignAppGroups(_ appGroups: [AppGroup], to appID: AppID, team: Team, session: Session) async throws -> AppID
     func deleteAppGroup(_ appGroup: AppGroup, team: Team, session: Session) async throws -> Bool
 
-    func listProvisioningProfiles(includeTeamProfiles: Bool, for team: Team, session: Session) async throws -> [ListedProvisioningProfile]
-    func createProvisioningProfile(name: String, appID: AppID, certificateIDs: [String], deviceIDs: [String], subPlatform: String?, distributionType: String, team: Team, session: Session) async throws -> ProvisioningProfile
-    func updateProvisioningProfile(profileID: String, name: String, appIDId: String, certificateIDs: [String], deviceIDs: [String], subPlatform: String?, distributionType: String, team: Team, session: Session) async throws -> ProvisioningProfile
+    func fetchProvisioningProfiles(includeTeamProfiles: Bool, for team: Team, session: Session) async throws -> [ListedProvisioningProfile]
+    func createProvisioningProfile(name: String, appID: AppID, certificateIDs: [String], deviceIDs: [String], subPlatform: String?, team: Team, session: Session) async throws -> ProvisioningProfile
+    func updateProvisioningProfile(profileID: String, name: String, appIDId: String, certificateIDs: [String], deviceIDs: [String], subPlatform: String?, team: Team, session: Session) async throws -> ProvisioningProfile
     func downloadProvisioningProfile(profileID: String, team: Team, session: Session) async throws -> ProvisioningProfile
-    func downloadProvisioningProfile(for appID: AppID, isTeamProfile: Bool, subPlatform: String?, deviceType: DeviceType, team: Team, session: Session) async throws -> ProvisioningProfile
-    func deleteProvisioningProfile(profileID: String, team: Team, session: Session) async throws -> Bool
+    func downloadProvisioningProfile(for appID: AppID, deviceType: DeviceType, team: Team, session: Session) async throws -> ProvisioningProfile
+    func deleteProvisioningProfile(_ profile: ListedProvisioningProfile, team: Team, session: Session) async throws -> Bool
+    func deleteProvisioningProfile(_ profile: ProvisioningProfile, team: Team, session: Session) async throws -> Bool
 
     func fetchAuthDevices(session: Session) async throws -> [AuthDevice]
     func removeAuthDevice(id: String, session: Session) async throws -> Bool
@@ -185,56 +186,32 @@ public extension DeveloperPortalAPI {
         )
     }
 
-    func addCertificate(machineName: String, type: CertificateType = .development, to team: Team, session: Session) async throws -> KeyStore {
-        try await addCertificate(machineName: machineName, type: type, to: team, session: session)
-    }
-
     func fetchDevices(for team: Team, session: Session) async throws -> [Device] {
         try await fetchDevices(for: team, types: .all, session: session)
     }
 
-    func listProvisioningProfiles(for team: Team, session: Session) async throws -> [ListedProvisioningProfile] {
-        try await listProvisioningProfiles(includeTeamProfiles: true, for: team, session: session)
+    func fetchProvisioningProfiles(for team: Team, session: Session) async throws -> [ListedProvisioningProfile] {
+        try await fetchProvisioningProfiles(includeTeamProfiles: true, for: team, session: session)
     }
 
     func createProvisioningProfile(name: String, appID: AppID, certificateIDs: [String], deviceIDs: [String], team: Team, session: Session) async throws -> ProvisioningProfile {
-        try await createProvisioningProfile(name: name, appID: appID, certificateIDs: certificateIDs, deviceIDs: deviceIDs, subPlatform: nil, distributionType: "limited", team: team, session: session)
-    }
-
-    func createProvisioningProfile(name: String, appID: AppID, certificateIDs: [String], deviceIDs: [String], subPlatform: String?, team: Team, session: Session) async throws -> ProvisioningProfile {
-        try await createProvisioningProfile(name: name, appID: appID, certificateIDs: certificateIDs, deviceIDs: deviceIDs, subPlatform: subPlatform, distributionType: "limited", team: team, session: session)
-    }
-
-    func createProvisioningProfile(name: String, appID: AppID, certificateIDs: [String], deviceIDs: [String] = [], type: ProfileType, team: Team, session: Session) async throws -> ProvisioningProfile {
-        try await createProvisioningProfile(name: name, appID: appID, certificateIDs: certificateIDs, deviceIDs: deviceIDs, subPlatform: type.subPlatformParameter, distributionType: type.distributionTypeParameter, team: team, session: session)
+        try await createProvisioningProfile(name: name, appID: appID, certificateIDs: certificateIDs, deviceIDs: deviceIDs, subPlatform: nil, team: team, session: session)
     }
 
     func updateProvisioningProfile(profileID: String, name: String, appIDId: String, certificateIDs: [String], deviceIDs: [String], team: Team, session: Session) async throws -> ProvisioningProfile {
-        try await updateProvisioningProfile(profileID: profileID, name: name, appIDId: appIDId, certificateIDs: certificateIDs, deviceIDs: deviceIDs, subPlatform: nil, distributionType: "limited", team: team, session: session)
+        try await updateProvisioningProfile(profileID: profileID, name: name, appIDId: appIDId, certificateIDs: certificateIDs, deviceIDs: deviceIDs, subPlatform: nil, team: team, session: session)
     }
 
-    func updateProvisioningProfile(profileID: String, name: String, appIDId: String, certificateIDs: [String], deviceIDs: [String], subPlatform: String?, team: Team, session: Session) async throws -> ProvisioningProfile {
-        try await updateProvisioningProfile(profileID: profileID, name: name, appIDId: appIDId, certificateIDs: certificateIDs, deviceIDs: deviceIDs, subPlatform: subPlatform, distributionType: "limited", team: team, session: session)
+    func downloadProvisioningProfile(for appID: AppID, team: Team, session: Session) async throws -> ProvisioningProfile {
+        try await downloadProvisioningProfile(for: appID, deviceType: .iPhone, team: team, session: session)
     }
 
-    func updateProvisioningProfile(profileID: String, name: String, appIDId: String, certificateIDs: [String], deviceIDs: [String] = [], type: ProfileType, team: Team, session: Session) async throws -> ProvisioningProfile {
-        try await updateProvisioningProfile(profileID: profileID, name: name, appIDId: appIDId, certificateIDs: certificateIDs, deviceIDs: deviceIDs, subPlatform: type.subPlatformParameter, distributionType: type.distributionTypeParameter, team: team, session: session)
+    func fetchProvisioningProfile(for appID: AppID, deviceType: DeviceType, team: Team, session: Session) async throws -> ProvisioningProfile {
+        try await downloadProvisioningProfile(for: appID, deviceType: deviceType, team: team, session: session)
     }
 
-    func downloadProvisioningProfile(for appID: AppID, isTeamProfile: Bool = true, team: Team, session: Session) async throws -> ProvisioningProfile {
-        try await downloadProvisioningProfile(for: appID, isTeamProfile: isTeamProfile, subPlatform: nil, deviceType: .iPhone, team: team, session: session)
-    }
-
-    func downloadProvisioningProfile(for appID: AppID, deviceType: DeviceType, team: Team, session: Session) async throws -> ProvisioningProfile {
-        try await downloadProvisioningProfile(for: appID, isTeamProfile: true, subPlatform: nil, deviceType: deviceType, team: team, session: session)
-    }
-
-    func downloadProvisioningProfile(for appID: AppID, isTeamProfile: Bool, deviceType: DeviceType, team: Team, session: Session) async throws -> ProvisioningProfile {
-        try await downloadProvisioningProfile(for: appID, isTeamProfile: isTeamProfile, subPlatform: nil, deviceType: deviceType, team: team, session: session)
-    }
-
-    func downloadProvisioningProfile(for appID: AppID, isTeamProfile: Bool = true, type: ProfileType, team: Team, session: Session) async throws -> ProvisioningProfile {
-        try await downloadProvisioningProfile(for: appID, isTeamProfile: isTeamProfile, subPlatform: type.subPlatformParameter, deviceType: type.primaryDeviceType, team: team, session: session)
+    func fetchProvisioningProfile(for appID: AppID, team: Team, session: Session) async throws -> ProvisioningProfile {
+        try await downloadProvisioningProfile(for: appID, deviceType: .iPhone, team: team, session: session)
     }
 }
 
@@ -242,22 +219,13 @@ public final class DeveloperPortal: DeveloperPortalAPI, Sendable {
 
     public static let shared = DeveloperPortal()
 
-    public var customHeaders: SideSignHeaders {
-        get { headersLock.withLock { cachedCustomHeaders } }
-        set { headersLock.withLock { cachedCustomHeaders = newValue } }
-    }
-    private let headersLock = NSLock()
-    private nonisolated(unsafe) var cachedCustomHeaders: SideSignHeaders
-
-    public let baseURL               = Constants.URLs.developerServicesBase
-    public let servicesBaseURL       = Constants.URLs.developerServicesV1Base
-    public let portalServicesBaseURL = Constants.URLs.developerPortalV1Base
+    public let baseURL         = Constants.URLs.developerServicesBase
+    public let servicesBaseURL = Constants.URLs.developerServicesV1Base
 
     let session: URLSession
 
-    public init(session: URLSession = .shared, customHeaders: SideSignHeaders = SideSignHeaders()) {
+    public init(session: URLSession = .shared) {
         self.session = session
-        self.cachedCustomHeaders = customHeaders
     }
 
     func formatDate(_ date: Date) -> String {
@@ -288,10 +256,9 @@ public final class DeveloperPortal: DeveloperPortalAPI, Sendable {
                                    team: Team? = nil,
                                    resultCodeHandler: ((Int, String) -> Error?)? = nil) async throws -> T
     {
-        let h = customHeaders
         var parameters: [String: any Sendable] = [
-            "clientId": h.developerServices.clientID,
-            "protocolVersion": h.developerServices.protocolVersion,
+            "clientId": Constants.clientID,
+            "protocolVersion": Constants.protocolVersion,
             "requestId": UUID().uuidString.uppercased()
         ]
 
@@ -307,7 +274,7 @@ public final class DeveloperPortal: DeveloperPortalAPI, Sendable {
             options: 0
         )
 
-        let url = URL(string: "\(requestURL.absoluteString)?clientId=\(h.developerServices.clientID)")!
+        let url = URL(string: "\(requestURL.absoluteString)?clientId=\(Constants.clientID)")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = bodyData
@@ -315,10 +282,10 @@ public final class DeveloperPortal: DeveloperPortalAPI, Sendable {
         let a = apiSession.anisetteData
         let headers: [String: String] = [
             "Content-Type": "text/x-xml-plist",
-            "User-Agent": h.developerServices.userAgent,
+            "User-Agent": Constants.xcodeUserAgent,
             "Accept": "text/x-xml-plist",
             "Accept-Language": "en-us",
-            "X-Apple-App-Info": h.grandSlam.authApp,
+            "X-Apple-App-Info": Constants.authApp,
             "X-Xcode-Version": apiSession.xcodeVersion,
             "X-Apple-I-Identity-Id": apiSession.dsid,
             "X-Apple-GS-Token": apiSession.authToken,
@@ -337,9 +304,6 @@ public final class DeveloperPortal: DeveloperPortalAPI, Sendable {
         headers.forEach { request.setValue($1, forHTTPHeaderField: $0) }
 
         verboseLog("[SideSign] sendRequest: \(url.absoluteString)")
-        if let allHeaders = request.allHTTPHeaderFields {
-            verboseLog("[SideSign] sendRequest HTTP headers: \(prettyJSONString(from: sanitizeHeadersForLogging(allHeaders)))")
-        }
 
         let (data, response): (Data, URLResponse)
         do {
@@ -419,13 +383,12 @@ public final class DeveloperPortal: DeveloperPortalAPI, Sendable {
         request.httpBody = bodyData
         request.setValue(methodOverride, forHTTPHeaderField: "X-HTTP-Method-Override")
 
-        let h = customHeaders
         var headers: [String: String] = [
             "Content-Type": "application/vnd.api+json",
-            "User-Agent": h.developerServices.userAgent,
+            "User-Agent": Constants.xcodeUserAgent,
             "Accept": "application/vnd.api+json",
             "Accept-Language": "en-us",
-            "X-Apple-App-Info": h.grandSlam.authApp,
+            "X-Apple-App-Info": Constants.authApp,
             "X-Xcode-Version": apiSession.xcodeVersion,
             "X-Apple-I-Identity-Id": apiSession.dsid,
             "X-Apple-GS-Token": apiSession.authToken
@@ -449,9 +412,6 @@ public final class DeveloperPortal: DeveloperPortalAPI, Sendable {
 
         verboseLog("[SideSign] sendServicesRequest to: \(request.url?.absoluteString ?? "unknown URL")")
         verboseLog("[SideSign] sendServicesRequest parameters: \(additionalParameters ?? [:])")
-        if let allHeaders = request.allHTTPHeaderFields {
-            verboseLog("[SideSign] sendServicesRequest HTTP headers: \(prettyJSONString(from: sanitizeHeadersForLogging(allHeaders)))")
-        }
 
         let (data, response): (Data, URLResponse)
         do {

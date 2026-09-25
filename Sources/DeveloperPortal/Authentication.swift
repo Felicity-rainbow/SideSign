@@ -28,7 +28,7 @@ public extension DeveloperPortal {
             "icscrec": true,
             "pbe": false,
             "prkgen": true,
-            "svct": customHeaders.grandSlam.service,
+            "svct": Constants.grandSlamService,
             "loc": anisetteData.locale,
             "X-Apple-Locale": anisetteData.locale,
             "X-Apple-I-MD": anisetteData.oneTimePassword,
@@ -260,7 +260,7 @@ public extension DeveloperPortal {
             throw ServerError.missingKey(key: "c", jsonPayload: prettyJSONString(from: decryptedDictionary))
         }
 
-        let app = customHeaders.grandSlam.authApp
+        let app = Constants.authApp
         guard let checksum = CryptoUtilities.hmacSHA256(key: sessionKey, strings: ["apptokens", dsid, app]) else {
             debugLog("[SideSign] Failed to compute apptokens checksum")
             throw DeveloperPortalError.authenticationHandshakeFailed(cause: "Failed to compute apptokens checksum")
@@ -293,10 +293,9 @@ public extension DeveloperPortal {
 
     func sendAuthenticationRequest(parameters requestParameters: [String: any Sendable], anisetteData: AnisetteData) async throws -> [String: any Sendable] {
         let requestURL = Constants.URLs.grandSlamAuth
-        let h = customHeaders
 
         let parameters: [String: any Sendable] = [
-            "Header": ["Version": h.grandSlam.headerVersion],
+            "Header": ["Version": Constants.grandSlamAuthHeader],
             "Request": requestParameters
         ]
 
@@ -310,14 +309,9 @@ public extension DeveloperPortal {
             "Content-Type": "text/x-xml-plist",
             "X-MMe-Client-Info": anisetteData.clientInfo,
             "Accept": "*/*",
-            "User-Agent": h.grandSlam.userAgent,
-            "Connection": "close"
+            "User-Agent": Constants.userAgent
         ]
         headers.forEach { request.setValue($1, forHTTPHeaderField: $0) }
-
-        if let allHeaders = request.allHTTPHeaderFields {
-            verboseLog("[SideSign] sendAuthenticationRequest HTTP headers: \(prettyJSONString(from: sanitizeHeadersForLogging(allHeaders)))")
-        }
 
         let (data, response): (Data, URLResponse)
         do {
@@ -660,10 +654,6 @@ public extension DeveloperPortal {
         var request = makeTwoFactorAuthRequest(url: Constants.URLs.trustedDevice, context: context)
         request.httpMethod = "GET"
 
-        if let allHeaders = request.allHTTPHeaderFields {
-            verboseLog("[SideSign] sendTrustedDevice2FACodeRequest HTTP headers: \(prettyJSONString(from: sanitizeHeadersForLogging(allHeaders)))")
-        }
-
         let (data, response) = try await session.data(for: request)
         let httpResponse = response as? HTTPURLResponse
         let statusCode = httpResponse?.safeStatusCode ?? 0
@@ -701,10 +691,6 @@ public extension DeveloperPortal {
         request.httpBody = try PropertyListSerialization.data(fromPropertyList: [
             "serverInfo": serverInfo
         ], format: .xml, options: 0)
-
-        if let allHeaders = request.allHTTPHeaderFields {
-            verboseLog("[SideSign] sendPhone2FACodeRequest HTTP headers: \(prettyJSONString(from: sanitizeHeadersForLogging(allHeaders)))")
-        }
 
         let (data, response) = try await session.data(for: request)
         let httpResponse = response as? HTTPURLResponse
@@ -789,10 +775,6 @@ public extension DeveloperPortal {
         var verifyRequest = makeTwoFactorAuthRequest(url: Constants.URLs.grandSlamValidate, context: context)
         verifyRequest.setValue(code, forHTTPHeaderField: "security-code")
 
-        if let allHeaders = verifyRequest.allHTTPHeaderFields {
-            verboseLog("[SideSign] validateTrustedDevice2FACode HTTP headers: \(prettyJSONString(from: sanitizeHeadersForLogging(allHeaders)))")
-        }
-
         debugLog("[SideSign] Verifying trusted device security code...")
         let (verifyData, verifyResponse) = try await session.data(for: verifyRequest)
         let verifyHttpResponse = verifyResponse as? HTTPURLResponse
@@ -812,10 +794,6 @@ public extension DeveloperPortal {
             "securityCode.code": code,
             "serverInfo": ["mode": mode, "phoneNumber.id": phoneID]
         ], format: .xml, options: 0)
-
-        if let allHeaders = verifyRequest.allHTTPHeaderFields {
-            verboseLog("[SideSign] validatePhone2FACode HTTP headers: \(prettyJSONString(from: sanitizeHeadersForLogging(allHeaders)))")
-        }
 
         debugLog("[SideSign] Verifying secondary security code...")
         let (verifyData, verifyResponse) = try await session.data(for: verifyRequest)
@@ -888,13 +866,12 @@ public extension DeveloperPortal {
 
         var request = URLRequest(url: url)
         let a = context.anisetteData
-        let h = customHeaders
         let headers: [String: String] = [
             "Accept": "application/x-buddyml",
             "Accept-Language": "en-us",
             "Content-Type": "application/x-plist",
-            "User-Agent": h.developerServices.userAgent,
-            "X-Apple-App-Info": h.grandSlam.authApp,
+            "User-Agent": Constants.xcodeUserAgent,
+            "X-Apple-App-Info": Constants.authApp,
             "X-Xcode-Version": context.xcodeVersion,
             "X-Apple-Identity-Token": encodedIdentityToken,
             "X-Apple-I-MD": a.oneTimePassword,
@@ -906,8 +883,7 @@ public extension DeveloperPortal {
             "X-Apple-I-SRL-NO": a.serialNumber,
             "X-Apple-I-Client-Time": a.clientTime,
             "X-Apple-Locale": a.locale,
-            "X-Apple-I-TimeZone": a.timeZone,
-            "Connection": "close"
+            "X-Apple-I-TimeZone": a.timeZone
         ]
         headers.forEach { request.setValue($1, forHTTPHeaderField: $0) }
         return request

@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import SideSign
 
 public enum CLIError: Error, LocalizedError {
     case missingRequiredArgument(String)
@@ -294,7 +293,7 @@ public struct PortalDeviceOptions: Sendable {
 public struct PortalCertOptions: Sendable {
     public enum Action: Sendable {
         case list
-        case create(name: String?, type: CertificateType?, csrPath: String?, outPath: String?)
+        case create(csrPath: String?, outPath: String?)
         case revoke(certID: String)
     }
 
@@ -341,12 +340,17 @@ public struct PortalAppGroupOptions: Sendable {
     }
 }
 
+public enum ProfileCreationType: String, Sendable {
+    case xcode
+    case manual
+}
+
 public struct PortalProfileOptions: Sendable {
     public enum Action: Sendable {
         case list
-        case download(bundleID: String, type: ProfileType?, isTeamProfile: Bool, outputPath: String?)
-        case create(bundleID: String, type: ProfileType, style: ProfileManagementStyle, name: String?, certIDs: [String]?, deviceIDs: [String]?, outputPath: String?)
-        case edit(profileID: String, name: String?, appID: String?, type: ProfileType?, certIDs: [String]?, deviceIDs: [String]?, outputPath: String?)
+        case download(bundleID: String, outputPath: String?)
+        case create(bundleID: String, type: ProfileCreationType, name: String?, certIDs: [String]?, deviceIDs: [String]?, outputPath: String?)
+        case edit(profileID: String, name: String?, appID: String?, certIDs: [String]?, deviceIDs: [String]?, outputPath: String?)
         case delete(profileID: String)
     }
 
