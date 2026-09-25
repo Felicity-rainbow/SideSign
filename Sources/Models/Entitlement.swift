@@ -59,6 +59,7 @@ public extension Entitlement {
     static let ubiquityKeyValueStore: Entitlement           = "com.apple.developer.ubiquity-kvstore-identifier"
     static let healthKit: Entitlement                       = "com.apple.developer.healthkit"
     static let healthKitAccess: Entitlement                 = "com.apple.developer.healthkit.access"
+    static let healthKitBackgroundDelivery: Entitlement     = "com.apple.developer.healthkit.background-delivery"
     static let homeKit: Entitlement                         = "com.apple.developer.homekit"
     static let criticalAlerts: Entitlement                  = "com.apple.developer.usernotifications.critical-alerts"
     static let timeSensitiveNotifications: Entitlement      = "com.apple.developer.usernotifications.time-sensitive"
@@ -79,7 +80,9 @@ public extension Entitlement {
         .extendedVirtualAddressing,
         .teamIdentifier,
         .keychainAccessGroups,
-        .applicationIdentifier
+        .applicationIdentifier,
+        .healthKit,
+        .healthKitBackgroundDelivery
     ]
 
     static let paidEntitlements: Set<Entitlement> = [
@@ -114,6 +117,7 @@ public extension Entitlement {
         .ubiquityKeyValueStore,
         .healthKit,
         .healthKitAccess,
+        .healthKitBackgroundDelivery,
         .homeKit,
         .criticalAlerts,
         .timeSensitiveNotifications,
